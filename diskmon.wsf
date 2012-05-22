@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<job id="run">
+
+<script type="text/javascript" src="https//raw.github.com/timepp/script/master/common.js"></script>
+<script type="text/javascript"><![CDATA[
+var items = WMI("cimv2").ExecQuery("Select * from Win32_LogicalDisk Where Caption = 'C:'");
+if (!items || items.Count == 0) {
+	WScript.Echo("xxx");
+}
+var item = new Enumerator(items).item();
+WScript.Echo(item.Size);
+WScript.Echo(item.Description);
+]]></script></job>
+

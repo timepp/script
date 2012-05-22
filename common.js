@@ -288,7 +288,7 @@ function GetTextFileContent(filename) {
         ofile.Close();
     }
     catch (e) {
-        alert(e.message);
+        //alert(e.message);
     }
     return content;
 }
