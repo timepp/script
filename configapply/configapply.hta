@@ -86,7 +86,7 @@
 function InitGlobals() {
 	G.cmdline = SplitCommandLine(thisHTA.commandLine);
 	G.path_conf = G.cmdline[0].replace(/^(.*?)\\+[^\\]*$/, "$1");
-	G.path_greensoft = "e:\\greensoft";
+	G.path_greensoft = "d:\\greensoft";
 	G.env = shell.Environment("Process");
 	G.user_name = G.env("USERNAME");
 	G.login_name = G.user_name;

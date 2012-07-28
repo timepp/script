@@ -20,15 +20,6 @@
 	};
 
 	//////////////////////////////////////////////////////////////////////////
-	var op = { name:"安装daemon tools" };
-	ops.push(op);
-	op.check = function()
-	{
-		return RegIsStringValueExist(HKEY_LOCAL_MACHINE, "SOFTWARE\\DT Soft\\DAEMON Tools Pro\\Data", "HP");
-	};
-
-
-	//////////////////////////////////////////////////////////////////////////
 	var op = new Object;
 	ops.push(op);
 	op.name = "把Everything加入计划任务";
@@ -122,18 +113,8 @@
 
 	//////////////////////////////////////////////////////////////////////////
 	var op = new Object;
-	ops.push(op);
-	op.name = "安装acrobat";
-	op.check = function()
-	{
-		return RegIsStringValueExist(HKEY_LOCAL_MACHINE, "SOFTWARE\\Adobe\\Adobe Acrobat\\9.0\\Installer", "Path");
-	};
-
-
-	//////////////////////////////////////////////////////////////////////////
-	var op = new Object;
 	//ops.push(op);
-	op.name = "安装live mesh";
+	op.name = "安装sky drive";
 	op.check = function()
 	{
 		return RegIsStringValueExist(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{DCB4E1D9-B187-4B54-971E-1478485C9A53}", "DisplayName");
@@ -156,15 +137,17 @@
 
 	//////////////////////////////////////////////////////////////////////////
 	var op = { name:"设置环境变量" };
+	var prompt = "$T $P$_$G ";
 	ops.push(op);
 	op.check = function() 
 	{
-		var val = GetEnv("GS");
-		return (val == G.path_greensoft);
+		return GetEnv("GS") == G.path_greensoft &&
+		       GetEnv("PROMPT") == prompt;
 	};
 	op.run = function()
 	{
 		SetEnv("GS", G.path_greensoft);
+		SetEnv("PROMPT", prompt);
 	};
 
 	//////////////////////////////////////////////////////////////////////////
@@ -252,30 +235,5 @@
 	op.name = "在%appdata%下面建立TC子目录";
 
 
-	//////////////////////////////////////////////////////////////////////////
-	var op = new Object;
-	ops.push(op);
-	op.name = "把autoexp.dat拷到VC的目录下";
-	op.src = "";
-	op.dest = "";
-	op.init = function()
-	{
-		this.src = G.path_conf + "\\autoexp.dat";
-		var dir = RegGetStringValue(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\VisualStudio\\8.0", "InstallDir");
-		if (dir)
-		{
-			var autoexp_dir = dir.replace(/^(.*)\\IDE\\?$/i, "$1\\Packages\\Debugger\\");
-			this.dest = autoexp_dir + "autoexp.dat";
-		}
-	};
-	op.check = function()
-	{
-		return !IsNeedCopy(this.src, this.dest);
-	};
-	op.run = function()
-	{
-		CopyFile(this.src, this.dest);
-		return true;
-	};
 
 } // end function InitTasks
