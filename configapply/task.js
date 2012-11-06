@@ -88,8 +88,8 @@
 	//////////////////////////////////////////////////////////////////////////
 	var op = new Object;
 	ops.push(op);
-	op.name = "安装字体megatops procoder, anonymous, Monaco";
-	op.fonts = new Array("Anonymous.ttf", "MegatopsProCoder1.0.fon", "MONACO.ttf");
+	op.name = "安装字体Monaco";
+	op.fonts = ["MONACO.ttf"];
 	op.check = function()
 	{
 		var shell_dir = shellapp.namespace(SHN_FONTS);
@@ -168,7 +168,14 @@
 	op.name = "安装office";
 	op.check = function()
 	{
-		return RegIsStringValueExist(HKEY_LOCAL_MACHINE, "Software\\Microsoft\\Office\\14.0\\Common\\InstallRoot", "Path");
+	    var locations = [
+		"{20150000-002A-0000-1000-0000000FF1CE}"
+	    ];
+	    for (var i in locations) {
+		var key = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\" + locations[i];
+		if (RegIsStringValueExist(HKEY_LOCAL_MACHINE, key, "DisplayName")) return true;
+	    }
+	    return false;
 	};
 
 	//////////////////////////////////////////////////////////////////////////
@@ -228,12 +235,23 @@
 	ops.push(op);
 	op.name = "导入VC配置";
 
-
-	//////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////
 	var op = new Object;
 	ops.push(op);
-	op.name = "在%appdata%下面建立TC子目录";
+	op.name = "emacs注册表设置";
+	op.check = function () {
+	    return RegIsStringValueExist(HKEY_CURRENT_USER, "SOFTWARE\\GNU\\emacs", "emacs.geometry");
+	}
+
+    //////////////////////////////////////////////////////////////////////////
+	var op = new Object;
+	ops.push(op);
+	op.name = "emacs APPDATA设置";
 
 
+    //////////////////////////////////////////////////////////////////////////
+	var op = new Object;
+	ops.push(op);
+	op.name = "重定义文档、图片、下载等位置";
 
 } // end function InitTasks

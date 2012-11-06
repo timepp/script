@@ -1,0 +1,55 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<title>SCA测试</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+		<meta http-equiv="MSThemeCompatible" content="Yes">
+		<script type="text/javascript" src="util.js"></script>
+		<hta:application id="HTA" scroll="no" icon="mobsync.exe" windowstate="normal" />
+		<script language="javascript">
+		    function $(x) {
+		        return document.getElementById(x);
+		    }
+			function Init() {
+			    $("switch_fakeBlame").checked = true;
+			}
+			function StartSCA() {
+			    var script_opt = "";
+			    if ($("switch_enableDebug").checked) script_opt = "//X";
+
+			    SetEnvSwitch("SCA_TEST_FAKE_BLAME", $("switch_fakeBlame").checked);
+			    SetEnvSwitch("SCA_TEST_NOMAIL",     !$("switch_sendEmail").checked);
+
+			    SetEnvSwitch("SCA_SWITCH_NO_VC",          !$("switch_SA_VC").checked);
+			    SetEnvSwitch("SCA_SWITCH_NO_CPPCHECK",    !$("switch_SA_cppcheck").checked);
+			    SetEnvSwitch("SCA_SWITCH_NO_BAIDUCHECK",  !$("switch_SA_baiducheck").checked);
+			    SetEnvSwitch("SCA_SWITCH_NO_BSTYLECHECK", !$("switch_SA_bstyle").checked);
+
+			    SetEnv("WORKSPACE", script_dir);
+
+			    var wsf_path = script_dir + "\\staticanalyze.wsf";
+			    var cfg_path = script_dir + "\\test\\config.js";
+
+			    var cmd = "cmd.exe /k cscript.exe %1 \"%2\" --config_file=\"%3\"".replace("%1", script_opt).replace("%2", wsf_path).replace("%3", cfg_path);
+			    //window.alert(cmd);
+			    shell.Run(cmd);
+			}
+			function SetEnvSwitch(name, value) {
+			    SetEnv(name, value ? "1" : null);
+			}
+		</script>
+	</head>
+	<body onload="Init()" onkeydown="if (event.keyCode == 27) window.close()">
+        <input id="switch_enableDebug" type="checkbox" /> <label for="switch_enableDebug">启用调试器</label> <br />
+        <input id="switch_fakeBlame" type="checkbox" /> <label for="switch_fakeBlame">伪造BLAME信息</label> <br />
+        <input id="switch_sendEmail" type="checkbox" /> <label for="switch_sendEmail">发送邮件</label> <br />
+		<hr />
+        <input id="switch_SA_VC" type="checkbox" /> <label for="switch_SA_VC">启用VC code analysis</label> <br />
+        <input id="switch_SA_cppcheck" type="checkbox" /> <label for="switch_SA_cppcheck">启用cppcheck</label> <br />
+        <input id="switch_SA_baiducheck" type="checkbox" /> <label for="switch_SA_baiducheck">启用baiducheck</label> <br />
+        <input id="switch_SA_bstyle" type="checkbox" /> <label for="switch_SA_bstyle">启用BStyle检查</label> <br />
+        <hr />
+		<button onclick="StartSCA()">启动SCA</button>
+
+	</body>
+</html>

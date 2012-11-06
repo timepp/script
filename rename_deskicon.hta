@@ -1,17 +1,22 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 	<title>桌面图标改名工具</title>
 	<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
 	<meta http-equiv="MSThemeCompatible" content="Yes">
-    <script type="text/javascript" src="common.js"></script>
+    <script type="text/javascript" src="tps/tps.js"></script>
 	<script type="text/javascript" src="json2.js"></script>
     <script language="javascript">
-		ResizeWindow(700, 300, true);
+        tps.ui.ResizeWindow(700, 300, false);
     </script>
     <hta:application id="RenameIcon" scroll="no" icon="explorer.exe" />
 	<script language="javascript">
-        if (ElevatePrivilege(RenameIcon.commandLine)) { body.onload = null; }
+	    if (!tps.sys.HasFullPrivilege()) {
+	        var oNet = new ActiveXObject("WScript.Network");
+	        var ret = shellapp.ShellExecute("mshta.exe", RenameIcon.commandLine + "--uac --user=" + oNet.UserName, "", "runas", 1);
+	        window.close();
+	        body.onload = null;
+	    }
     </script>
     <style type="text/css">
 		input { width: 90%; }
@@ -21,18 +26,15 @@
 			padding: 4px 6px 1px;
 			margin: 1px 1px 10px 15px;
 		}
-        .ref { color:blue;　cursor:hand; }
+        .ref { color:blue; cursor:default; }
         .em { color:green; }
         .warning { color:red; }
     </style>
     <script language="javascript">
-        var shell = new ActiveXObject("WScript.Shell");
-        var shellapp = new ActiveXObject("Shell.Application");
-        var fso = new ActiveXObject("Scripting.FileSystemObject");
         var oHTA = Item("RenameIcon");
         var desktopSelf = shellapp.Namespace(0x10).Self.Path;
 		var desktopAll = shellapp.Namespace(0x19).Self.Path;
-		var mydir = location.pathname.replace(/^(.*)\\[^\\]+$/, "$1");
+		var mydir = tps.sys.GetScriptDir();
 		var logfile = mydir + "\\" + "rename.log";
 		var renameMap = {};
 
@@ -40,7 +42,7 @@
             return document.getElementById(t);
         }
 		function Run() {
-			var text = GetTextFileContent(logfile);
+			var text = tps.file.ReadTextFileSimple(logfile);
 			if (text) renameMap = JSON.parse(text);
 
 			var result = { total:0, fail:0, errors:"" };
@@ -48,7 +50,7 @@
 			Rename(desktopAll, result);
 
 			text = JSON.stringify(renameMap, null, "\n");
-			SaveFile(logfile, text);
+			tps.file.WriteTextFileSimple(logfile, text);
 
 			var msg = "改名结束，共改名文件" + result.total + "个";
 			if (result.fail > 0) {
