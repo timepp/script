@@ -1,55 +1,226 @@
 ﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 	<head>
-		<title>SCA测试</title>
+		<title>Braid 启动器 by timepp</title>
 		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 		<meta http-equiv="MSThemeCompatible" content="Yes">
-		<script type="text/javascript" src="util.js"></script>
+        <style type="text/css">
+            .title {
+                color: white;
+                width: 100%;
+                background-color: lightblue;
+                margin: 4px 0px 4px 0px;
+                padding: 2px 2px 2px 4px;
+            }
+            .button {
+                border: 1px solid lightblue;
+                padding: 1px 2px 1px 2px;
+                vertical-align:middle;
+            }
+            button {
+                vertical-align:middle;
+            }
+            body {
+                cursor:default;
+                padding: 0px;
+            }
+        </style>
+        <script type="text/javascript" src="json2.js"></script>
+        <script type="text/javascript" src="tps/tps.js"></script>
 		<hta:application id="HTA" scroll="no" icon="mobsync.exe" windowstate="normal" />
 		<script language="javascript">
+		    var cfgfile = "braid_launcher.cfg";
+		    var fps_options = ["默认（自动匹配）", "60 fps", "30 fps", "20 fps", "15 fps", "12 fps", "10 fps"];
+
+		    var cfg = {
+		        braid_dir: "",
+		        runset: {
+		            windowed: false,
+		            fps: 0,
+		            no_post: false,
+		            no_vsync: false,
+		            no_sound: false,
+		            editor: false,
+                    mod: ""
+		        }
+		    };
+
+		    function ApplyRunSet(runset) {
+		        tps.ui.SelectItem(select_fps, runset.fps + " fps");
+		        tps.ui.SelectItem(select_mods, runset.mod);
+
+		        switch_windowMode.checked = runset.windowed;
+		        switch_nopost.checked = runset.no_post;
+		        switch_novsync.checked = runset.no_vsync;
+		        switch_nosound.checked = runset.no_sound;
+		        switch_editor.checked = runset.editor;
+		    }
+
+		    function GetRunSet() {
+		        var runset = {};
+		        runset.windowed = switch_windowMode.checked;
+		        if (select_fps.selectedIndex == 0) {
+		            runset.fps = 0;
+		        } else {
+		            runset.fps = parseInt(select_fps.options.item(select_fps.selectedIndex).value, 10);
+		        }
+		        runset.no_post = switch_nopost.checked;
+		        runset.no_vsync = switch_novsync.checked;
+		        runset.no_sound = switch_nosound.checked;
+		        runset.editor = switch_editor.checked;
+		        runset.mod = select_mods.value;
+		        return runset;
+		    }
+
+		    function ApplyConfig(cfg) {
+		        text_braiddir.value = cfg.braid_dir;
+		        OnBraidDirChange();
+		        ApplyRunSet(cfg.runset);
+		    }
+
+		    function GetConfig() {
+		        var cfg = {
+		            braid_dir: text_braiddir.value,
+		            runset: GetRunSet()
+		        };
+		        return cfg;
+		    }
+
 		    function $(x) {
 		        return document.getElementById(x);
 		    }
-			function Init() {
-			    $("switch_fakeBlame").checked = true;
+		    function Init() {
+		        var o = select_fps;
+		        for (var i in fps_options) {
+		            var opt = new Option(fps_options[i], fps_options[i]);
+		            o.add(opt);
+		        }
+
+		        try {
+		            var cfgtext = tps.file.ReadTextFile(tps.sys.GetScriptDir() + "\\" + cfgfile, "utf-8");
+		            o = JSON.parse(cfgtext);
+		            if (o) {
+		                cfg = o;
+		            }
+		        } catch (e) { }
+
+		        try {
+		            select_runset.add(new Option("", ""));
+		            var runsets = tps.file.Glob(tps.sys.GetScriptDir() + "\\runset").files;
+		            for (var i in runsets) {
+		                select_runset.add(new Option(runsets[i], runsets[i]));
+		            }
+		        } catch (e) { }
+
+		        if (!cfg.braid_dir) {
+		            // 猜测braid_dir
+		            var dir = tps.sys.GetScriptDir() + "\\braid";
+		            for (; ;) {
+		                if (fso.FileExists(dir + "\\braid.exe")) {
+		                    cfg.braid_dir = dir;
+		                    break;
+		                }
+		                var parentDir = tps.file.GetDir(dir);
+		                if (parentDir == dir) break;
+		                dir = parentDir;
+		            }
+		        }
+
+		        ApplyConfig(cfg);
 			}
-			function StartSCA() {
-			    var script_opt = "";
-			    if ($("switch_enableDebug").checked) script_opt = "//X";
-
-			    SetEnvSwitch("SCA_TEST_FAKE_BLAME", $("switch_fakeBlame").checked);
-			    SetEnvSwitch("SCA_TEST_NOMAIL",     !$("switch_sendEmail").checked);
-
-			    SetEnvSwitch("SCA_SWITCH_NO_VC",          !$("switch_SA_VC").checked);
-			    SetEnvSwitch("SCA_SWITCH_NO_CPPCHECK",    !$("switch_SA_cppcheck").checked);
-			    SetEnvSwitch("SCA_SWITCH_NO_BAIDUCHECK",  !$("switch_SA_baiducheck").checked);
-			    SetEnvSwitch("SCA_SWITCH_NO_BSTYLECHECK", !$("switch_SA_bstyle").checked);
-
-			    SetEnv("WORKSPACE", script_dir);
-
-			    var wsf_path = script_dir + "\\staticanalyze.wsf";
-			    var cfg_path = script_dir + "\\test\\config.js";
-
-			    var cmd = "cmd.exe /k cscript.exe %1 \"%2\" --config_file=\"%3\"".replace("%1", script_opt).replace("%2", wsf_path).replace("%3", cfg_path);
-			    //window.alert(cmd);
-			    shell.Run(cmd);
+		    function StartAPP() {
+		        cfg = GetConfig();
+		        var runset = cfg.runset;
+		        var path = cfg.braid_dir + "\\braid.exe";
+			    var param = "";
+			    if (runset.windowed) param += " -windowed";
+			    if (runset.no_post) param += " -no_post";
+			    if (runset.no_sound) param += " -no_music";
+			    if (runset.no_vsync) param += " -no_vsync";
+			    if (runset.editor) param += " -editor";
+			    if (runset.mod) param += " -universe " + runset.mod;
+			    
+			    shell.CurrentDirectory = cfg.braid_dir;
+			    shell.Run("braid.exe " + param);
 			}
-			function SetEnvSwitch(name, value) {
-			    SetEnv(name, value ? "1" : null);
+
+			function OnClose() {
+			    cfg = GetConfig();
+			    tps.file.WriteTextFile(JSON.stringify(cfg, null, "\t"), tps.sys.GetScriptDir() + "\\" + cfgfile, "utf-8");
+			    window.close();
 			}
-		</script>
+			function OnBraidDirChange() {
+			    ResetMods(text_braiddir.value);
+			}
+			function ResetMods(rootdir) {
+			    select_mods.innerHTML = "";
+
+			    try {
+			        var mods = tps.file.Glob(rootdir + "\\universes").dirs;
+			    } catch (e) { }
+                
+			    select_mods.add(new Option("Braid缺省关卡", ""));
+			    for (var i in mods) {
+			        select_mods.add(new Option(mods[i], mods[i]));
+			    }
+			}
+			function OnClickSaveRunset() {
+			    var name = text_config_save.value;
+			    if (!name) return;
+
+			    cfg.runset = SaveRunSet();
+			    cfg.braid_dir = text_braiddir.value;
+			    var runsetpath = tps.sys.GetScriptDir() + "\\runset\\" + name;
+			    tps.file.WriteTextFile(JSON.stringify(cfg.runset, null, "\t"), runsetpath, "utf-8");
+			    alert("保存预设成功");
+			}
+			function OnRunsetChange() {
+			    var name = select_runset.value;
+			    if (!name) return;
+
+			    try {
+			        var runset = JSON.parse(tps.file.ReadTextFile(GetRunsetPath(name), "utf-8"));
+			        if (runset) {
+			            ApplyRunSet(runset);
+			        }
+			    } catch (e) { }
+			}
+			function GetRunsetPath(name) {
+			    return tps.sys.GetScriptDir() + "\\runset\\" + name;
+			}
+
+        </script>
 	</head>
-	<body onload="Init()" onkeydown="if (event.keyCode == 27) window.close()">
-        <input id="switch_enableDebug" type="checkbox" /> <label for="switch_enableDebug">启用调试器</label> <br />
-        <input id="switch_fakeBlame" type="checkbox" /> <label for="switch_fakeBlame">伪造BLAME信息</label> <br />
-        <input id="switch_sendEmail" type="checkbox" /> <label for="switch_sendEmail">发送邮件</label> <br />
-		<hr />
-        <input id="switch_SA_VC" type="checkbox" /> <label for="switch_SA_VC">启用VC code analysis</label> <br />
-        <input id="switch_SA_cppcheck" type="checkbox" /> <label for="switch_SA_cppcheck">启用cppcheck</label> <br />
-        <input id="switch_SA_baiducheck" type="checkbox" /> <label for="switch_SA_baiducheck">启用baiducheck</label> <br />
-        <input id="switch_SA_bstyle" type="checkbox" /> <label for="switch_SA_bstyle">启用BStyle检查</label> <br />
+	<body onload="Init()" onkeydown="if (event.keyCode == 27) window.close();" onContextMenu="return false;" onunload="OnClose()">
+        <div class="title">预设</div>
+        加载预设：<select id="select_runset" onchange="OnRunsetChange()"></select> 　　　　　
+        <input id="text_config_save" type="text" /> &nbsp;&nbsp;<button type="button" onclick="OnClickSaveRunset()">保存预设</button>
+        <br />
+
+        <br />
+        <div class="title">运行选项</div>
+
+        帧速率：<select id="select_fps"></select> 
+        <br />
+        运行剧本：<select id="select_mods"></select> <br />
+        <input id="switch_editor" type="checkbox" /> <label for="switch_editor">启用关卡编辑</label>
+        <br />
+
+        <input id="switch_nopost" type="checkbox" /> <label for="switch_nopost">关闭视觉特效</label>
+        <br />
+        <input id="switch_novsync" type="checkbox" /> <label for="switch_novsync">关闭垂直同步</label>
+        <br />
+        <input id="switch_nosound" type="checkbox" /> <label for="switch_nosound">关闭声音</label>
+        <br />
+        <input id="switch_windowMode" type="checkbox" /> <label for="switch_windowMode">窗口模式</label>
+        <br />
+
+        <br />
+        <div class="title">系统</div>
+        Braid安装目录： <input id="text_braiddir" type="text" size="100" onpropertychange="OnBraidDirChange()"/> <br />
+        
         <hr />
-		<button onclick="StartSCA()">启动SCA</button>
+		<br /><button onclick="StartAPP()">启动Braid!</button>
 
 	</body>
 </html>
