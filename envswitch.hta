@@ -1,17 +1,12 @@
-<html>
+﻿<html>
 <head>
     <title>hosts切换工具</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 
-    <script type="text/javascript" src="common.js"></script>
-    <script language="javascript">
-        ResizeWindow(830, 500, true);
-    </script>
+    <script type="text/javascript" src="tps/tps.js"></script>
     <hta:application id="thisHTA" icon="irftp.exe"></hta:application>
     <script language="javascript">
-        if (ElevatePrivilege(thisHTA.commandLine)) {
-            body.onload = null;
-        }
+        tps.sys.RestartHTA(true, true);
     </script>
 
     <style type="text/css">
@@ -121,7 +116,7 @@
                     <tr height="1">
                         <td>
                             <button style="border-color: red" onclick="OnOK()">
-                                切换</button>
+                                应用</button>
                         </td>
                     </tr>
                 </table>

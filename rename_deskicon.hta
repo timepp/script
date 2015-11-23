@@ -1,139 +1,173 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-  <head>
+﻿<!doctype html>
+<html>
+<head>
     <title>桌面图标改名工具</title>
     <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
-    <meta http-equiv="MSThemeCompatible" content="Yes"/>
+    <meta http-equiv="MSThemeCompatible" content="Yes" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <script type="text/javascript" src="tps/tps.js"></script>
     <script type="text/javascript" src="json2.js"></script>
     <script language="javascript">
-    tps.ui.ResizeWindow(700, 300, false);
+        tps.sys.RestartHTA(true, true);
     </script>
     <hta:application id="RenameIcon" scroll="no" icon="explorer.exe" />
-    <script language="javascript">
-    if (!tps.sys.HasFullPrivilege()) {
-	var oNet = new ActiveXObject("WScript.Network");
-	var ret = shellapp.ShellExecute("mshta.exe", RenameIcon.commandLine + "--uac --user=" + oNet.UserName, "", "runas", 1);
-	window.close();
-	body.onload = null;
-    }
-    </script>
     <style type="text/css">
-      input { width: 90%; }
-      textarea { width: 100%; word-break:break-all;}
-      button{ 
-      vertical-align: middle;
-      padding: 4px 6px 1px;
-      margin: 1px 1px 10px 15px;
-      }
-      .ref { color:blue; cursor:default; }
-      .em { color:green; }
-      .warning { color:red; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        input {
+            width: 90%;
+        }
+
+        textarea {
+            width: 100%;
+            word-break: break-all;
+        }
+
+        button {
+            vertical-align: middle;
+            padding: 4px 6px 1px;
+            margin: 1px 1px 10px 15px;
+        }
+
+        .ref {
+            color: blue;
+            cursor: default;
+        }
+
+        .em {
+            color: green;
+        }
+
+        .warning {
+            color: red;
+        }
     </style>
     <script language="javascript">
-    var oHTA = Item("RenameIcon");
-var desktopSelf = shellapp.Namespace(0x10).Self.Path;
-var desktopAll = shellapp.Namespace(0x19).Self.Path;
-var mydir = tps.sys.GetScriptDir();
-var logfile = mydir + "\\" + "rename.log";
-var renameMap = {};
+        function Init() {
+            tps.log.AddHtmlElementDevice(document.getElementById("log"));
+        }
 
-function Item(t) {
-    return document.getElementById(t);
-}
-function Run() {
-    var text = tps.file.ReadTextFileSimple(logfile);
-if (text) renameMap = JSON.parse(text);
+        function Item(t) {
+            return document.getElementById(t);
+        }
+        // returns succeeded elements
+        function DoRename(renameMap) {
+            var succeededMap = {};
+            for (var path1 in renameMap) {
+                var path2 = renameMap[path1];
+                try {
+                    fso.MoveFile(path1, path2);
+                    succeededMap[path1] = path2;
+                    tps.log.Event("movefile succeeded: {0} -> {1}".format(path1, path2));
+                } catch (e) {
+                    tps.log.Error("movefile failed: {0} --> {1}".format(path1, path2));
+                }
+            }
+            return succeededMap;
+        }
+        function SaveRenameMap(renameMap) {
+            var logfile = tps.sys.GetScriptDir() + "\\" + "rename.log";
+            var text = JSON.stringify(renameMap, null, "\n");
+            tps.file.WriteTextFileSimple(text, logfile);
+        }
+        function LoadRenameMap() {
+            var renameMap = {};
+            var logfile = tps.sys.GetScriptDir() + "\\" + "rename.log";
+            var text = tps.file.ReadTextFileSimple(logfile);
+            if (text) renameMap = JSON.parse(text);
+            return renameMap;
+        }
+        function Run() {
+            var historyRenameMap = LoadRenameMap();
+            var renameMap = {};
+            var desktopSelf = shellapp.Namespace(0x10).Self.Path;
+            var desktopAll = shellapp.Namespace(0x19).Self.Path;
+            tps.util.MergeProperty(renameMap, GenerateRenameMap(desktopSelf));
+            tps.util.MergeProperty(renameMap, GenerateRenameMap(desktopAll));
+            tps.log.Event("开始改名{0}个文件".format(Object.keys(renameMap).length.toString()));
+            var succeededMap = DoRename(renameMap);
+            tps.util.MergeProperty(historyRenameMap, succeededMap);
+            SaveRenameMap(historyRenameMap);
+            tps.log.Event("改名完成");
+            alert("改名完成, 已经在当前目录下创建了rename.log文件供将来恢复");
+        }
+        function Restore() {
+            var historyRenameMap = LoadRenameMap();
+            tps.log.Event("开始恢复{0}个文件".format(Object.keys(historyRenameMap).length.toString()));
+            // invert key and value
+            var renameMap = {};
+            for (var path1 in historyRenameMap) {
+                renameMap[historyRenameMap[path1]] = path1;
+            }
+            DoRename(renameMap);
+            SaveRenameMap({});
+            tps.log.Event("恢复完成");
+        }
+        function GenerateRenameMap(path) {
+            var occupiedName = {};
+            var renameMap = {};
+            var renameOperation = [];
 
-var result = { total:0, fail:0, errors:"" };
-Rename(desktopSelf, result);
-Rename(desktopAll, result);
+            var filelist = [];
+            var fc = new Enumerator(fso.GetFolder(path).files);
+            for (var n = 0; !fc.atEnd() ; fc.moveNext()) {
+                var f = fc.item();
+                filelist.push(f.Name);
+                occupiedName[f.Name] = true;
+            }
 
-text = JSON.stringify(renameMap, null, "\n");
-tps.file.WriteTextFileSimple(logfile, text);
-
-var msg = "改名结束，共改名文件" + result.total + "个";
-if (result.fail > 0) {
-    msg += ", 其中失败" + result.fail + "个";
-    Item("note").style.display = "none";
-    var pre = Item("errors");
-    pre.innerText = result.errors;
-    pre.style.display = "block";
-}
-alert(msg);
-}
-function Rename(path, result) {
-    var occupiedName = {};
-    var renameOperation = [];
-
-    var filelist = [];
-    var fc = new Enumerator(fso.GetFolder(path).files);
-for (var n = 0; !fc.atEnd(); fc.moveNext()) {
-    var f = fc.item();
-    filelist.push(f.Name);
-    occupiedName[f.Name] = true;
-}
-
-var n = 1;
-for (var i = 0; i < filelist.length; i++) {
-    var oldName = filelist[i];
-    if (NeedRename(oldName)) {
-	var newName = "";
-	do {
-	    newName = BlankName(n++) + ".lnk";
-	} while (occupiedName[newName]);
-	occupiedName[newName] = true;
-	var path1 = path + "\\" + oldName;
-	var path2 = path + "\\" + newName;
-	result.total++;
-	try {
-	    fso.MoveFile(path1, path2);
-	    renameMap[path1] = path2;
-	} 
-	catch (e) {
-	    result.fail++;
-	    result.errors += "\n" + e.message + " [" + path + "\\" + oldName + "]";
-	}
-    }
-}
-}
-function EditSelf() {
-    shell.Run("notepad " + oHTA.commandLine);
-}
-function OpenPath(path) {
-    shell.Run("explorer.exe " + path);
-}
-function BinCode(n, chars) {
-    var code = "";
-    var m = chars.length;
-    do {
-        code += chars.charAt(n % m);
-        n = Math.floor(n / m);
-    } while (n > 0);
-    return code;
-}
-function BlankName(n) {
-    return BinCode(n, " 　");
-}
-function NeedRename(f) {
-    if (!f.match(/^.*\.lnk$/)) return false;
-    if (f.match(/^[ 　]+\.lnk$/)) return false;
-    return true;
-}
+            var n = 1;
+            for (var i = 0; i < filelist.length; i++) {
+                var oldName = filelist[i];
+                if (NeedRename(oldName)) {
+                    var newName = "";
+                    do {
+                        newName = BlankName(n++) + ".lnk";
+                    } while (occupiedName[newName]);
+                    occupiedName[newName] = true;
+                    var path1 = path + "\\" + oldName;
+                    var path2 = path + "\\" + newName;
+                    renameMap[path1] = path2;
+                }
+            }
+            return renameMap;
+        }
+        function EditSelf() {
+            shell.Run('notepad "{0}"'.format(tps.sys.GetScriptPath()));
+        }
+        function BinCode(n, chars) {
+            var code = "";
+            var m = chars.length;
+            do {
+                code += chars.charAt(n % m);
+                n = Math.floor(n / m);
+            } while (n > 0);
+            return code;
+        }
+        function BlankName(n) {
+            return BinCode(n, " 　");
+        }
+        function NeedRename(f) {
+            if (!f.match(/^.*\.lnk$/)) return false;
+            if (f.match(/^[ 　]+\.lnk$/)) return false;
+            return true;
+        }
     </script>
-    </head>
-    <body onkeydown="if (event.keyCode == 27) window.close()">
-      <button onclick="Run()"> 开始改名</button> 
-      <button onclick="Run()"> 恢复原名</button> <br />
-      <hr />
-      <div id="note">
-	说明：<br />
-	<a href="#" onclick="EditSelf()">本工具</a>通过把桌面上的图标改名成空格，来达到隐藏桌面图标文字的目的。<br />
-	实现原理：把<a href="#" onclick="OpenPath(desktopSelf)">用户桌面</a>和<a href="#" onclick="OpenPath(desktopAll)">共享桌面</a>目录下的所有.lnk文件的名字改为中文空格和英文空格的组合。<br />
-	<br />
-	<span class="warning">注意：只会更改桌面上的快捷方式文件(.lnk)，其他文件不会被改名。</span><br />
-      </div>
-      <pre id="errors" style="display:none;">
+</head>
+<body onload="Init()" onkeydown="if (event.keyCode == 27) window.close()">
+    <button onclick="Run()">开始改名</button>
+    <button onclick="Restore()">恢复原名</button>
+    <br />
+    <hr />
+    <div id="note">
+        说明：<br />
+        <a href="#" onclick="EditSelf()">本工具</a>通过把桌面上的图标改名成空格，来达到隐藏桌面图标文字的目的。<br />
+        <br />
+        <span class="warning">注意：只会更改桌面上的快捷方式文件(.lnk)，其他文件不会被改名。</span><br />
+    </div>
+    <pre id="errors" style="display: none;">
       </pre>
-    </body>
-  </html>
+    <div id="log"></div>
+</body>
+</html>

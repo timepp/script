@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <ItemGroup>
+    <None Include="braid.hta" />
+    <None Include="braid_launcher.cfg" />
+    <None Include="DebugScript.vcxproj.filters" />
+    <None Include="diskmon.wsf" />
+    <None Include="envswitch.hta" />
+    <None Include="htastyle.css" />
+    <None Include="json2.js" />
+    <None Include="randomrun.wsf" />
+    <None Include="regfav.hta" />
+    <None Include="rename_deskicon.hta" />
+    <None Include="testparam.wsf" />
+    <None Include="tps\README.md">
+      <Filter>tps</Filter>
+    </None>
+    <None Include="tps\tps.js">
+      <Filter>tps</Filter>
+    </None>
+    <None Include="tps\unittest.hta">
+      <Filter>tps</Filter>
+    </None>
+    <None Include="umdhview.config.js" />
+    <None Include="umdhview.wsf" />
+    <None Include="winsettings.hta" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="tps">
+      <UniqueIdentifier>{51b88db7-6ebb-473e-9724-4890e380a48f}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

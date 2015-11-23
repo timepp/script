@@ -1,0 +1,467 @@
+﻿<!doctype html>
+<html>
+<head>
+    <title>Software Environment Configuration Tool</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
+    <hta:application id="thisHTA" icon="irftp.exe"></hta:application>
+    <style type="text/css">
+        .logwin {
+            padding-left: 5px;
+            font-size: small;
+            font-family: monospace;
+            border: thin solid skyblue;
+            overflow: auto;
+        }
+
+        .task_cell {
+            cursor: pointer;
+        }
+
+        .log_debug {
+            color: gray;
+        }
+
+        .log_event {
+            color: blue;
+        }
+
+        .log_warning {
+            color: darkorange;
+        }
+
+        .log_error {
+            color: red;
+        }
+
+        #task_table {
+            width: 100%;
+        }
+
+        #log_header {
+            margin-top: 10px;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            border: none;
+            font-family: Courier New,Segoe UI,Verdana;
+        }
+    </style>
+    <script type="text/javascript" src="tps/tps.js"></script>
+    <script type="text/javascript">
+    //<!CDATA[
+    
+tps.sys.RestartHTA(thisHTA.commandLine, true, true);
+
+var G = {
+    path_conf: tps.sys.GetScriptDir(),
+    path_greensoft: "c:\\cloud\\soft",
+    path_srcroot: tps.file.FirstExistDir(["c:\\src", "d:\\src", "e:\\src"]) || "d:\\src",
+    username: shell.Environment("Process")("USERNAME"),
+    path_profile: shell.Environment("Process")("USERPROFILE"),
+    path_autorun: shell.SpecialFolders("Startup"),
+    path_autorun_alluser: shell.SpecialFolders("AllUsersStartup")
+};
+G.path_softconf = "c:\\cloud\\softconf";
+
+var GUI = {
+    max_cellwidth: 0,
+    cell_columns: 0
+};
+
+function SimpleRegistryTask(name, values) {
+    values = [].concat(values);
+    this.name = name;
+    this.check = function () {
+        for (var i in values) {
+            var v = values[i];
+            if (v.val == null) {
+                if (tps.reg.GetStringValue(v.key, v.valname) == null &&
+                    tps.reg.GetIntValue(v.key, v.valname) == null)
+                    return false;
+            }
+            else if (typeof v.val === 'string') {
+                if (v.val != tps.reg.GetStringValue(v.key, v.valname)) return false;
+            } else {
+                if (v.val != tps.reg.GetIntValue(v.key, v.valname)) return false;
+            }
+        }
+        return true;
+    };
+    this.run = function () {
+        var uncomplete = false;
+
+        for (var i in values) {
+            var v = values[i];
+            tps.reg.CreateKey(v.key);
+            if (v.val == null) {
+                uncomplete = true;
+            }
+            else if (typeof v.val === 'string') {
+                tps.reg.SetStringValue(v.key, v.valname, v.val);
+            } else {
+                tps.reg.SetIntValue(v.key, v.valname, v.val);
+            }
+        }
+        if (uncomplete) {
+            alert("manual configuration still needed.");
+        }
+    };
+}
+
+function RunAtLogonTask(name, cmdline, elevate) {
+	this.name = "autostart: " + name;
+	this.check = function() {
+		var o = tps.sys.RunCommandAndGetResult("schtasks.exe /query /tn " + name).output;
+		return o.indexOf(name) != -1;
+	};
+	this.run = function() {
+		var cmd = 'schtasks.exe /create /sc ONLOGON /tn ' + name + ' /tr "cmd.exe /C start """' + name + '""" ' + cmdline + '"';
+		if (elevate) cmd += ' /rl HIGHEST';
+		alert(cmd);
+		var o = tps.sys.RunCommandAndGetResult(cmd);
+		alert(o.output? o.output : o.errors);
+	};
+}
+
+function AutoRunTask(name, target, args, alluser) {
+    this.name = "autorun: " + name;
+    this.check = function() {
+        var filter = new RegExp(name, "i");
+        var local = tps.file.Glob(G.path_autorun, filter, 1).length > 0;
+        var global = tps.file.Glob(G.path_autorun_alluser, filter, 1).length > 0;
+        return (alluser && !local && global) || (!alluser && local && !global);
+    };
+    this.run = function() {
+        var filename = name + ".lnk";
+        // first delete both
+        try {
+            fso.DeleteFile(G.path_autorun + "\\" + filename);
+            fso.DeleteFile(G.path_autorun_alluser + "\\" + filename);
+        } catch (e) {}
+        // create the right one
+        var dir = alluser? G.path_autorun_alluser : G.path_autorun;
+        tps.log.Event("shortcut:" + dir + "\\" + filename + " --> " + target + " " + args);
+        tps.file.CreateShortcut(dir + "\\" + filename, target, "", args);
+    };
+}
+
+function EnvTask(name, value) {
+    this.name = "env: " + name;
+    this.check = function() {
+        return tps.sys.GetSystemEnv(name) == value;
+    }
+    this.run = function() {
+        tps.sys.SetSystemEnv(name, value);
+    }
+}
+
+function AddToPathTask(name, path) {
+    this.name = "Add " + name + " to PATH";
+    this.check = function() {
+        return tps.sys.InPath(path);
+    }
+    this.run = function() {
+        tps.sys.AddToPath(path);
+    }
+}
+
+var tasks = [
+
+    //new AutoRunTask("handyrun", G.path_greensoft + "\\handyrun\\handyrun.exe", "", false),
+    //new RunAtLogonTask("mactype", G.path_greensoft + "\\mactype\\MacTray.exe", true),
+    //new RunAtLogonTask("autoit", G.path_greensoft + "\\autoit\\autoit3.exe " + G.path_softconf + "\\hotkey.au3", false),
+    new AutoRunTask("autoit", G.path_greensoft + "\\autoit\\autoit3.exe", G.path_softconf + "\\hotkey.au3", false),
+    new AutoRunTask("mactype", G.path_greensoft + "\\mactype\\MacTray.exe", "", false),
+    //new RunAtLogonTask("ultrasearch", G.path_greensoft + "\\ultrasearch\\ultrasearch.exe", true),
+    //new EnvTask("GS", G.path_greensoft),
+    //new EnvTask("SRCROOT", G.path_srcroot),
+    //new EnvTask("SOFTCONF", G.path_softconf),
+
+    {
+        name: "Explorer favorites",
+        check: function () {
+            return tps.file.Glob(G.path_profile + "\\Links", /G40/i, 1).length > 0;
+        },
+        run: function () {
+            tps.file.CreateShortcut(G.path_profile + "\\Links\\G40.lnk", "\\\\stcsrv-g40.fareast.corp.microsoft.com\\Share\\tongjunhui");
+        }
+    },
+
+    new AddToPathTask("%GS%\\cmdline", G.path_greensoft + "\\cmdline"),
+    new AddToPathTask("cygwin", G.path_greensoft + "\\cygwin\\bin"),
+    new AddToPathTask("dmd", G.path_greensoft + "\\dmd2\\windows\\bin"),
+    new SimpleRegistryTask("Explore view setting", [
+        {
+            key: "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+            valname: "Hidden",
+            val: 1
+        },
+        {
+            key: "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+            valname: "HideFileExt",
+            val: 0
+        }
+    ]),
+
+    new SimpleRegistryTask("Install 7zip",
+                           {
+                               key: "HKCR\\*\\shellex\\ContextMenuHandlers\\7-Zip",
+                               valname: "",
+                               val: null
+                           }
+                          ),
+
+    new SimpleRegistryTask("Disable shell hotkeys", 
+                           {
+                               key: "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+                               valname: "DisabledHotKeys",
+                               val: "awq"
+                           }
+                          ),
+
+    new SimpleRegistryTask("Emacs context menu",
+                           {
+                               key: "HKCR\\*\\shell\\Open With Emacs\\command",
+                               valname: "",
+                               val: "wscript.exe \"%GS%\\emacs\\emacs.wsf\" -n -- \"%1\"".replace("%GS%", G.path_greensoft)
+                           }
+                          ),
+
+    new SimpleRegistryTask("DisableAeroShake",
+                           {
+                               key: "HKCU\\Software\\Policies\\Microsoft\\Windows\\Explorer",
+                               valname: "NoWindowMinimizingShortcuts",
+                               val: 1
+                           }
+                           // need restart explorer.exe
+                          ),
+
+    {
+        // if we meet any of MSGOTHIC.TTC, MSJH.TTC, MSYH.TTC but haven't meet target CN font, we insert it
+        name: "Set Font Link",
+        check: function () {
+            var fonts = tps.reg.EnumValues(this.keypath());
+            for (var i in fonts) {
+                var font = fonts[i].name;
+                var val = fonts[i].valstr.split("\\0");
+                for (var j in val) {
+                    if (val[j].beginWithOneOf(this.targetFont())) break;
+                    if (val[j].beginWithOneOf(this.cnFont())) return false;
+                }
+            }
+            return true;
+        },
+        run: function() {
+            var fonts = tps.reg.EnumValues(this.keypath());
+            for (var i in fonts) {
+                var font = fonts[i].name;
+                var val = tps.reg.GetMultiStringValue(this.keypath(), font);
+                for (var j in val) {
+                    if (val[j].beginWithOneOf(this.targetFont())) break;
+                    if (val[j].beginWithOneOf(this.cnFont())) {
+                        val.splice.apply(val, [j, 0].concat(this.targetFont()));
+                        tps.log.Event("processing font: " + font);
+                        tps.reg.SetMultiStringValue(this.keypath(), font, val);
+                        break;
+                    }
+                }
+            }
+        },
+        keypath: function() {
+            return "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink";
+        },
+        cnFont: function () {
+            return ["msgothic.ttc", "msjh.ttc", "msyh.ttc", "simsun.ttc", "mingliu.ttc"];
+        },
+        targetFont: function () {
+            return ["XHEI.TTC,XHei,128,96", "XHEI.TTC,XHei"];
+        }
+    }
+];
+
+var ops = [];
+
+
+
+function Init() {
+    tps.log.AddHtmlElementDevice(document.getElementById("log"));
+
+    var args = tps.util.ParseArgument(tps.util.SplitCmdLine(thisHTA.commandLine));
+    for (var i in tasks) {
+        if (tasks[i].name) {
+            ops.push(tasks[i]);
+        }
+    }
+
+    var tc = document.getElementById("task_c");
+    for (var i in ops) {
+        var op = ops[i];
+        var cell = document.createElement("span");
+        cell.innerText = op.name;
+        cell.className = "task_cell";
+        tc.appendChild(cell);
+        if (GUI.max_cellwidth < cell.offsetWidth) GUI.max_cellwidth = cell.offsetWidth;
+        tc.removeChild(cell);
+        op.status = false;
+    }
+
+    window.onresize = OnWindowResize;
+    OnWindowResize();
+
+    tps.log.Debug("System Information: ");
+    tps.log.Indent();
+    for (var x in G) {
+        tps.log.Debug(x + ": " + G[x]);
+    }
+    tps.log.Unindent();
+
+    for (var i in ops) {
+        var op = ops[i];
+        try {
+            if (op.hasOwnProperty("initialize")) op.initialize();
+            if (op.hasOwnProperty("check")) op.status = op_check(op);
+            MarkStatus(op.cell, op.status);
+        }
+        catch (e) {
+            var msg = e;
+            if (e.hasOwnProperty("message")) msg = e.message;
+            tps.log.Warning("[$T]: task check failed: $M".replace("$T", op.name).replace("$M", msg));
+        }
+    }
+
+    AddGradientBK(document.getElementById("log_header"), "skyblue", "#FFFFFF");
+}
+
+function OnWindowResize() {
+    RecalcLayout();
+}
+
+function RecalcLayout() {
+    var oLog = document.getElementById("log");
+    var tbl = document.getElementById("task_table");
+    var tbl_hdr = document.getElementById("log_header");
+    var cols = Math.floor(document.body.offsetWidth / GUI.max_cellwidth);
+    if (cols < 1) cols = 1;
+    if (cols != GUI.cell_columns) {
+        GUI.cell_columns = cols;
+        while (tbl.rows.length > 0) {
+            tbl.deleteRow(0);
+        }
+
+        var rows = Math.ceil(ops.length / cols);
+        for (var i = 0; i < rows; i++) {
+            var row = tbl.insertRow(-1);
+            for (var j = 0; j < cols; j++) {
+                if (j * rows + i >= ops.length) continue;
+                var op = ops[j * rows + i];
+                var cell = row.insertCell(-1);
+                cell.appendChild(document.createTextNode(op.name));
+                cell.className = "task_cell";
+                cell.op = op;
+                cell.style.width = GUI.max_cellwidth;
+                cell.onclick = OnTaskClick;
+                op.cell = cell;
+                MarkStatus(cell, op.status);
+            }
+        }
+    }
+
+    var h = document.body.offsetHeight - tbl.offsetHeight - tbl_hdr.offsetHeight - 40;
+    if (h > 100) {
+        oLog.style.height = h;
+    }
+}
+
+function ClearLog() {
+    document.getElementById("log").innerHTML = "";
+}
+function AddGradientBK(o, c1, c2, tp) {
+    if (c2 == null) c2 = "#FFFFFF";
+    if (tp == null) tp = 1;
+    o.style.filter = "progid:DXImageTransform.Microsoft.Gradient(GradientType=%tp,StartColorStr='%sc', EndColorStr='%ec')".replace("%sc", c1).replace("%ec", c2).replace("%tp", tp);
+}
+function OnTaskClick() {
+    var cell = window.event.srcElement;
+    var op = cell.op;
+    var has_chk_method = op.hasOwnProperty("check");
+    var has_run_method = op.hasOwnProperty("run");
+    if (has_chk_method) {
+        if (has_run_method) {
+            op_run(op);
+        }
+        op.status = op_check(op);
+    }
+    else {
+        if (op.status) {
+            if (confirm("Reset this task to undone?")) op.status = false;
+        }
+        else {
+            if (has_run_method) {
+                op_run(op);
+                op.status = confirm("Task done but cannot check...");
+            }
+            else {
+                op.status = confirm("$T: This task must be done manually...".replace("$T", op.name));
+            }
+        }
+    }
+
+    MarkStatus(cell, cell.op.status);
+}
+function op_run(op) {
+    tps.log.Event("run task: " + op.name);
+    tps.log.Indent();
+    try { op.run(); } catch (e) {
+        var msg = e;
+        if (e.hasOwnProperty("message")) msg = e.message;
+        tps.log.Warning("[$T]: failed. $M".replace("$T", op.name).replace("$M", msg));
+    }
+    tps.log.Unindent();
+}
+function op_check(op) {
+    tps.log.Event("check " + op.name);
+    tps.log.Indent();
+    var ret = false;
+    try {
+        ret = op.check();
+    } catch (e) {
+        var msg = e;
+        if (e.hasOwnProperty("message")) msg = e.message;
+        tps.log.Error("task check failed: $M".replace("$T", op.name).replace("$M", msg));
+    }
+    tps.log.Unindent();
+    return ret;
+}
+function MarkStatus(o, c) { AddGradientBK(o, c ? "#CCFFCC" : "#FFCCCC"); }
+
+
+//]]>
+    </script>
+    </head>
+    <body onload="Init()" onkeydown="if (event.keyCode == 27) window.close()">
+      <table id="frame_tbl" style="width: 100%;">
+        <tr>
+          <td id="task_c">
+            <table id="task_table">
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="height: 20px;"></td>
+        </tr>
+        <tr>
+          <td id="log_header">OPERATION LOG
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <div id="log" class="logwin">
+            </div>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>

@@ -2,7 +2,7 @@
 <job id="run">
 
 <script type="text/javascript" src="https://raw.github.com/timepp/monaws/master/mona_ws.js"></script>
-<script type="text/javascript"><![CDATA[
+<script type="text/javascript">
 var items = WMI("cimv2").ExecQuery("Select * from Win32_LogicalDisk Where Caption = 'C:'");
 if (!items || items.Count == 0) {
 	WScript.Echo("xxx");
@@ -10,5 +10,5 @@ if (!items || items.Count == 0) {
 var item = new Enumerator(items).item();
 WScript.Echo(item.FreeSpace / 1000000);
 WScript.Echo(item.Description);
-]]></script></job>
+</script></job>
 
