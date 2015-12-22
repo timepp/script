@@ -159,12 +159,18 @@ function EnvTask(name, value) {
 }
 
 function AddToPathTask(name, path) {
+    path = [].concat(path);
     this.name = "Add " + name + " to PATH";
     this.check = function() {
-        return tps.sys.InPath(path);
+        for (var i in path) {
+            if (!tps.sys.InPath(path[i])) return false;
+        }
+        return true;
     }
     this.run = function() {
-        tps.sys.AddToPath(path);
+        for (var i in path) {
+            tps.sys.AddToPath(path[i]);
+        }
     }
 }
 
@@ -193,6 +199,10 @@ var tasks = [
     new AddToPathTask("%GS%\\cmdline", G.path_greensoft + "\\cmdline"),
     new AddToPathTask("cygwin", G.path_greensoft + "\\cygwin\\bin"),
     new AddToPathTask("dmd", G.path_greensoft + "\\dmd2\\windows\\bin"),
+    new AddToPathTask("sdtools", [
+        G.path_greensoft + "\\sdtools",
+        G.path_greensoft + "\\sdtools\\sdpack\\bin"
+        ]),
     new SimpleRegistryTask("Explore view setting", [
         {
             key: "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
