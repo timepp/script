@@ -4,6 +4,12 @@
     <LocalDebuggerDebuggerType>Script</LocalDebuggerDebuggerType>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerCommand>mshta.exe</LocalDebuggerCommand>
-    <LocalDebuggerCommandArguments>"$(ProjectDir)\braid.hta"</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>"$(ProjectDir)\winsettings.hta"</LocalDebuggerCommandArguments>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LocalDebuggerCommand>mshta.exe</LocalDebuggerCommand>
+    <LocalDebuggerCommandArguments>winsettings.hta</LocalDebuggerCommandArguments>
+    <LocalDebuggerDebuggerType>Script</LocalDebuggerDebuggerType>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>
