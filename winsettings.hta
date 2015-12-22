@@ -268,7 +268,7 @@ var tasks = [
             var fonts = tps.reg.EnumValues(this.keypath());
             for (var i in fonts) {
                 var font = fonts[i].name;
-                var val = tps.reg.GetMultiStringValue(this.keypath(), font);
+                var val = fonts[i].valstr.split("\\0");
                 for (var j in val) {
                     if (val[j].beginWithOneOf(this.targetFont())) break;
                     if (val[j].beginWithOneOf(this.cnFont())) {
