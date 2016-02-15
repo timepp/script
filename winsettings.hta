@@ -240,6 +240,24 @@ var tasks = [
                            }
                           ),
 
+    new SimpleRegistryTask("Register .org file", [
+        {
+            key: "HKCU\\Software\\Classes\\EmacsClient\\shell\\open\\command",
+            valname: "",
+            val: "wscript.exe c:\\cloud\\soft\\emacs\\emacs.wsf -n -- \"%1\""
+        },
+        {
+            key: "HKCU\\Software\\Classes\\.org",
+            valname: "",
+            val: "EmacsClient"
+        },
+        {
+            key: "HKCU\\Software\\Classes\\EmacsClient\\DefaultIcon",
+            valname: "",
+            val: "c:\\cloud\\soft\\emacs\\bin\\emacs.exe"
+        }
+        ]),
+
     new SimpleRegistryTask("DisableAeroShake",
                            {
                                key: "HKCU\\Software\\Policies\\Microsoft\\Windows\\Explorer",
@@ -322,7 +340,23 @@ var tasks = [
                 "Bitstream Vera Sans Mono": qingyuan
             };
         }
+    },
+
+    {
+        name: "outlook url protocol",
+        check: function () {
+            return tps.reg.StringValueExists("HKCR\\outlook\\shell\\open\\command", null);
+        },
+        run: function () {
+            tps.reg.SetStringValue("HKCR\\outlook", null, "URL:OutlookItem");
+            tps.reg.SetStringValue("HKCR\\outlook", "URL Protocol", "");
+            tps.reg.SetStringValue("HKCR\\outlook\\shell\\open\\command", null, tps.util.DoubleQuote(this.outlookpath()) + ' /select "%1"');
+        },
+        outlookpath: function () {
+            return tps.reg.GetStringValue("HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\OUTLOOK.EXE", null);
+        }
     }
+
 ];
 
 var ops = [];
