@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html>
 <head>
     <title>Software Environment Configuration Tool</title>
@@ -250,8 +250,8 @@ var tasks = [
                           ),
 
     {
+        name: "Font Link Callback",
         // if we meet any of MSGOTHIC.TTC, MSJH.TTC, MSYH.TTC but haven't meet target CN font, we insert it
-        name: "Set Font Link",
         check: function () {
             var fonts = tps.reg.EnumValues(this.keypath());
             for (var i in fonts) {
@@ -288,6 +288,39 @@ var tasks = [
         },
         targetFont: function () {
             return ["XHEI.TTC,XHei,128,96", "XHEI.TTC,XHei"];
+        }
+    },
+
+    {
+        name: "Font Link special",
+        check: function () {
+            var fontlinks = this.fontLinks();
+            var fonts = tps.reg.EnumValues(this.keypath());
+            for (var fontname in fontlinks) {
+                var value = "";
+                for (var i in fonts) {
+                    if (fonts[i].name == fontname) value = fonts[i].valstr;
+                }
+                if (value != fontlinks[fontname].join("\\0")) return false;
+            }
+            return true;
+        },
+        run: function() {
+            var fontlinks = this.fontLinks();
+            for (var fontname in fontlinks) {
+                tps.reg.SetMultiStringValue(this.keypath(), fontname, fontlinks[fontname]);
+            }
+        },
+        keypath: function() {
+            return "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink";
+        },
+        fontLinks: function() {
+            var qingyuan = ["QingYuan.ttc,QingYuan,128,96", "QingYuan.ttc,QingYuan"];
+            return {
+                "Consolas" : qingyuan,
+                "Source Code Pro": qingyuan,
+                "Bitstream Vera Sans Mono": qingyuan
+            };
         }
     }
 ];
