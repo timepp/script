@@ -1,0 +1,47 @@
+.logwin {
+    padding-left: 5px;
+    font-size: small;
+    font-family: monospace;
+    border: thin solid skyblue;
+    overflow: auto;
+}
+
+.task_cell {
+    cursor: pointer;
+}
+
+.log_debug {
+    color: gray;
+}
+
+.log_event {
+    color: blue;
+}
+
+.log_warning {
+    color: darkorange;
+}
+
+.log_error {
+    color: red;
+}
+
+.log_time {
+    padding-right: 10px;
+}
+
+#task_table {
+    width: 100%;
+}
+
+#log_header {
+    margin-top: 10px;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    border: none;
+    font-family: Courier New,Segoe UI,Verdana;
+}
