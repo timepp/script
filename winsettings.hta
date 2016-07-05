@@ -1,9 +1,9 @@
-<!doctype html>
+﻿<!doctype html>
 <html>
 <head>
     <title>Software Environment Configuration Tool</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"></meta>
-    <hta:application id="thisHTA" icon="irftp.exe"></hta:application>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <style type="text/css">
         .logwin {
             padding-left: 5px;
@@ -53,7 +53,7 @@
     <script type="text/javascript">
     //<!CDATA[
     
-tps.sys.RestartHTA(thisHTA.commandLine, true, true);
+tps.sys.RestartHTA(tps.sys.processOption.requestAdmin | tps.sys.processOption.escapeWOW64);
 
 var G = {
     path_conf: tps.sys.GetScriptDir(),
@@ -163,13 +163,13 @@ function AddToPathTask(name, path) {
     this.name = "Add " + name + " to PATH";
     this.check = function() {
         for (var i in path) {
-            if (!tps.sys.InPath(path[i])) return false;
+            if (!tps.sys.InPath(tps.sys.systemEnv, path[i])) return false;
         }
         return true;
     }
     this.run = function() {
         for (var i in path) {
-            tps.sys.AddToPath(path[i]);
+            tps.sys.AddToPath(tps.sys.systemEnv, path[i]);
         }
     }
 }
@@ -178,9 +178,9 @@ var tasks = [
 
     //new AutoRunTask("handyrun", G.path_greensoft + "\\handyrun\\handyrun.exe", "", false),
     //new RunAtLogonTask("mactype", G.path_greensoft + "\\mactype\\MacTray.exe", true),
-    //new RunAtLogonTask("autoit", G.path_greensoft + "\\autoit\\autoit3.exe " + G.path_softconf + "\\hotkey.au3", false),
-    new AutoRunTask("autoit", G.path_greensoft + "\\autoit\\autoit3.exe", G.path_softconf + "\\hotkey.au3", false),
-    new AutoRunTask("mactype", G.path_greensoft + "\\mactype\\MacTray.exe", "", false),
+    new RunAtLogonTask("autoit", G.path_greensoft + "\\autoit\\autoit3.exe " + G.path_softconf + "\\hotkey.au3", false),
+    //new AutoRunTask("autoit", G.path_greensoft + "\\autoit\\autoit3.exe", G.path_softconf + "\\hotkey.au3", false),
+    //new AutoRunTask("mactype", G.path_greensoft + "\\mactype\\MacTray.exe", "", false),
     //new RunAtLogonTask("ultrasearch", G.path_greensoft + "\\ultrasearch\\ultrasearch.exe", true),
     //new EnvTask("GS", G.path_greensoft),
     //new EnvTask("SRCROOT", G.path_srcroot),
@@ -366,7 +366,6 @@ var ops = [];
 function Init() {
     tps.log.AddHtmlElementDevice(document.getElementById("log"));
 
-    var args = tps.util.ParseArgument(tps.util.SplitCmdLine(thisHTA.commandLine));
     for (var i in tasks) {
         if (tasks[i].name) {
             ops.push(tasks[i]);
@@ -458,7 +457,7 @@ function ClearLog() {
 function AddGradientBK(o, c1, c2, tp) {
     if (c2 == null) c2 = "#FFFFFF";
     if (tp == null) tp = 1;
-    o.style.filter = "progid:DXImageTransform.Microsoft.Gradient(GradientType=%tp,StartColorStr='%sc', EndColorStr='%ec')".replace("%sc", c1).replace("%ec", c2).replace("%tp", tp);
+    o.style.background = "linear-gradient(to right, %sc, %ec)".replace("%sc", c1).replace("%ec", c2).replace("%tp", tp);
 }
 function OnTaskClick() {
     var cell = window.event.srcElement;
