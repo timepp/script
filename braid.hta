@@ -27,6 +27,7 @@
         </style>
         <script type="text/javascript" src="json2.js"></script>
         <script type="text/javascript" src="tps/tps.js"></script>
+        <script type="text/javascript" src="/tps.js"></script>
 		<hta:application id="HTA" scroll="no" icon="mobsync.exe" windowstate="normal" />
 		<script language="javascript">
 		    var cfgfile = "braid_launcher.cfg";
@@ -154,14 +155,19 @@
 			}
 			function ResetMods(rootdir) {
 			    select_mods.innerHTML = "";
-
-			    try {
-			        var mods = tps.file.Glob(rootdir + "\\universes").dirs;
-			    } catch (e) { }
+			    var mods = [];
+			    var folder = rootdir + "\\universes";
+			    if (fso.FolderExists(folder)) {
+			        mods = tps.file.Glob(folder, null, 1);
+			    }
                 
 			    select_mods.add(new Option("Braid缺省关卡", ""));
 			    for (var i in mods) {
-			        select_mods.add(new Option(mods[i], mods[i]));
+			        var mod = mods[i];
+			        if (mod.endsWith("\\")) {
+			            mod = mod.substr(0, mod.length - 1);
+			            select_mods.add(new Option(mod, mod));
+			        }
 			    }
 			}
 			function OnClickSaveRunset() {
@@ -191,7 +197,7 @@
 
         </script>
 	</head>
-	<body onload="Init()" onkeydown="if (event.keyCode == 27) window.close();" onContextMenu="return false;" onunload="OnClose()">
+	<body onload="Init()" onContextMenu="return false;">
         <div class="title">预设</div>
         加载预设：<select id="select_runset" onchange="OnRunsetChange()"></select> 　　　　　
         <input id="text_config_save" type="text" /> &nbsp;&nbsp;<button type="button" onclick="OnClickSaveRunset()">保存预设</button>
