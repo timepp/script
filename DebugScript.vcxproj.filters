@@ -24,6 +24,7 @@
     <None Include="umdhview.config.js" />
     <None Include="umdhview.wsf" />
     <None Include="winsettings.hta" />
+    <None Include="winsettings.js" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="tps">

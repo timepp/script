@@ -142,7 +142,7 @@ var tasks = [
     },
 
     new AddToPathTask("%GS%\\cmdline", G.path_greensoft + "\\cmdline"),
-    new AddToPathTask("cygwin", G.path_greensoft + "\\cygwin\\bin"),
+    new AddToPathTask("MikTex", G.path_greensoft + "\\texmfs\\install\\miktex\\bin"),
     new AddToPathTask("dmd", G.path_greensoft + "\\dmd2\\windows\\bin"),
     new AddToPathTask("sdtools", [
         G.path_greensoft + "\\sdtools",
@@ -250,10 +250,30 @@ var tasks = [
             return ["msgothic.ttc", "msjh.ttc", "msyh.ttc", "simsun.ttc", "mingliu.ttc"];
         },
         targetFont: function () {
-            return ["XHEI.TTC,XHei,128,96", "XHEI.TTC,XHei"];
+            return ["SimSun.ttc,SimSun"];
         }
     },
-
+{
+        name: "Font Link Fix",
+        run: function () {
+            var fonts = tps.reg.EnumValues(this.keypath());
+            for (var i in fonts) {
+                var font = fonts[i].name;
+                var val = fonts[i].valstr.split("\\0");
+                for (var j in val) {
+                    if (val[j] == "SimSun.ttc,SimSun,128,96") {
+                        val.splice(j, 1);
+                        tps.log.Event("processing font: " + font);
+                        tps.reg.SetMultiStringValue(this.keypath(), font, val);
+                        break;
+                    }
+                }
+            }
+        },
+        keypath: function () {
+            return "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink";
+        },
+},
     {
         name: "Font Link special",
         check: function () {
@@ -278,11 +298,12 @@ var tasks = [
             return "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink";
         },
         fontLinks: function () {
-            var qingyuan = ["QingYuan.ttc,QingYuan,128,96", "QingYuan.ttc,QingYuan"];
+            var simsun = ["SimSun.ttc, SimSun"];
             return {
-                "Consolas": qingyuan,
-                "Source Code Pro": qingyuan,
-                "Bitstream Vera Sans Mono": qingyuan
+                "Consolas": simsun,
+                "Source Code Pro": simsun,
+                "Monaco": simsun,
+                "Bitstream Vera Sans Mono": simsun
             };
         }
     },
