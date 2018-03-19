@@ -231,26 +231,36 @@ var tasks = [
             var fonts = tps.reg.EnumValues(this.keypath());
             for (var i in fonts) {
                 var font = fonts[i].name;
+                tps.log.Event("processing font: " + font);
                 var val = fonts[i].valstr.split("\\0");
+                var newVal = [];
+                var targetAdded = false;
                 for (var j in val) {
-                    if (val[j].beginWithOneOf(this.targetFont())) break;
-                    if (val[j].beginWithOneOf(this.cnFont())) {
-                        val.splice.apply(val, [j, 0].concat(this.targetFont()));
-                        tps.log.Event("processing font: " + font);
-                        tps.reg.SetMultiStringValue(this.keypath(), font, val);
-                        break;
+                    var item = val[j];
+                    if (targetAdded) {
+                        if (!item.beginWithOneOf(this.targetFont())) {
+                            newVal.push(item);
+                        }
+                    } else {
+                        if (item.beginWithOneOf(this.cnFont())) {
+                            newVal.push(this.targetFont());
+                            targetAdded = true;
+                        }
+                        newVal.push(item);
                     }
                 }
+                tps.reg.SetMultiStringValue(this.keypath(), font, newVal);
             }
         },
         keypath: function () {
             return "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink";
         },
         cnFont: function () {
-            return ["msgothic.ttc", "msjh.ttc", "msyh.ttc", "simsun.ttc", "mingliu.ttc"];
+            return ["msgothic.ttc", "msjh.ttc", "msyh.ttc", "simsun.ttc", "mingliu.ttc", "qingyuan.ttc"];
         },
         targetFont: function () {
-            return ["SimSun.ttc,SimSun"];
+            return "QingYuan.TTC,QingYuan";
+            //return "SimSun.TTC,SimSun"
         }
     },
 {
@@ -298,12 +308,12 @@ var tasks = [
             return "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\FontLink\\SystemLink";
         },
         fontLinks: function () {
-            var simsun = ["SimSun.ttc, SimSun"];
+            var target = ["QingYuan.ttc, QingYuan"];
             return {
-                "Consolas": simsun,
-                "Source Code Pro": simsun,
-                "Monaco": simsun,
-                "Bitstream Vera Sans Mono": simsun
+                "Consolas": target,
+                "Source Code Pro": target,
+                "Monaco": target,
+                "Bitstream Vera Sans Mono": target
             };
         }
     },
