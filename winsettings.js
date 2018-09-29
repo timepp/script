@@ -203,6 +203,40 @@ var tasks = [
         }
     ]),
 
+    new SimpleRegistryTask("Register .apk file", [
+        {
+            key: "HKCU\\Software\\Classes\\.apk",
+            valname: "",
+            val: "apkfile"
+        },
+        {
+            key: "HKCU\\Software\\Classes\\apkfile\\DefaultIcon",
+            valname: "",
+            val: "c:\\cloud\\PICTURE\\apk.ico"
+        },
+        {
+            key: "HKCU\\Software\\Classes\\apkfile\\shell\\Open\\command",
+            valname: "",
+            val: "c:\\cloud\\soft\\cmdline\\installapk.bat \"%1\""
+        },
+        {
+            key: "HKCU\\Software\\Classes\\apkfile\\shell\\Remove Sign\\command",
+            valname: "",
+            val: "c:\\cloud\\soft\\cmdline\\removeapksign.bat \"%1\""
+        },
+        {
+            key: "HKCU\\Software\\Classes\\apkfile\\shell\\View Certificate\\command",
+            valname: "",
+            val: "c:\\cloud\\soft\\cmdline\\viewcert.bat \"%1\""
+        },
+        {
+            key: "HKCU\\Software\\Classes\\apkfile\\shell\\Zip Align\\command",
+            valname: "",
+            val: "c:\\cloud\\soft\\cmdline\\zipalignapk.bat \"%1\""
+        }
+    ]),
+
+
     new SimpleRegistryTask("DisableAeroShake",
                            {
                                key: "HKCU\\Software\\Policies\\Microsoft\\Windows\\Explorer",
