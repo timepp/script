@@ -254,10 +254,18 @@ var tasks = [
             for (var i in fonts) {
                 var font = fonts[i].name;
                 var val = fonts[i].valstr.split("\\0");
+                tps.log.Debug("checking font:" + font);
+                tps.log.Indent();
                 for (var j in val) {
-                    if (val[j].beginWithOneOf(this.targetFont())) break;
-                    if (val[j].beginWithOneOf(this.cnFont())) return false;
+                    tps.log.Debug(val[j]);
+                    if (val[j].beginWithOneOf(this.checkingTargetFont())) break;
+                    if (val[j].beginWithOneOf(this.cnFont())) {
+                        tps.log.Unindent();
+                        tps.log.Debug("check failed");
+                        return false;
+                    }
                 }
+                tps.log.Unindent();
             }
             return true;
         },
@@ -272,7 +280,7 @@ var tasks = [
                 for (var j in val) {
                     var item = val[j];
                     if (targetAdded) {
-                        if (!item.beginWithOneOf(this.targetFont())) {
+                        if (!item.beginWithOneOf(this.checkingTargetFont())) {
                             newVal.push(item);
                         }
                     } else {
@@ -293,8 +301,11 @@ var tasks = [
             return ["msgothic.ttc", "msjh.ttc", "msyh.ttc", "simsun.ttc", "mingliu.ttc", "qingyuan.ttc"];
         },
         targetFont: function () {
-            return "QingYuan.TTC,QingYuan";
-            //return "SimSun.TTC,SimSun"
+            //return "QingYuan.TTC,QingYuan";
+            return "SimSun.TTC,SimSun"
+        },
+        checkingTargetFont: function () {
+            return this.targetFont().split(",").slice(0, 1);
         }
     },
 {
